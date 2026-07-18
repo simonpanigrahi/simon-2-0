@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { loadState, saveState } from "./storage.js";
+import { useState } from "react";
+import { loadState } from "./storage.js";
+import { useSync, SYNC } from "./useSync.js";
+import SettingsModal from "./SettingsModal.jsx";
 import {
   SEASON,
   QUESTS,
@@ -15,24 +17,24 @@ import {
   questsDoneIn,
 } from "./data.js";
 
+// Maps a sync-indicator string to its colour class.
+const SYNC_CLASS = {
+  [SYNC.synced]: "is-synced",
+  [SYNC.syncing]: "is-syncing",
+  [SYNC.offline]: "is-offline",
+  [SYNC.error]: "is-error",
+  [SYNC.local]: "is-local",
+};
+
 export default function App() {
   // localStorage is synchronous, so we can hydrate on first render — no loading state.
   const [state, setState] = useState(loadState);
   const [viewWeek, setViewWeek] = useState(() => weekOf(new Date()));
-  const [saveNote, setSaveNote] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Persist on every change, but skip the initial mount so we don't flash "saved" on load.
-  const firstRun = useRef(true);
-  useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
-    const ok = saveState(state);
-    setSaveNote(ok ? "saved" : "save failed — retry an action");
-    const t = setTimeout(() => setSaveNote(""), 1200);
-    return () => clearTimeout(t);
-  }, [state]);
+  // Persistence + cross-device sync live entirely in this hook; the tracker
+  // components below are unchanged and know nothing about it.
+  const sync = useSync({ state, setState });
 
   const tISO = today();
   const curWeek = weekOf(new Date());
@@ -81,7 +83,21 @@ export default function App() {
         <header className="fade-in">
           <div className="ribbon-head">
             <div className="eyebrow">THE 26-WEEK CAMPAIGN</div>
-            <div className="save-note mono">{saveNote}</div>
+            <div className="header-right">
+              <span className={`mono sync-status ${SYNC_CLASS[sync.status] || "is-local"}`}>
+                <span className="sync-dot" aria-hidden="true" />
+                {sync.status}
+              </span>
+              <button
+                type="button"
+                className="gear"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Open sync settings"
+                title="Sync settings"
+              >
+                ⚙
+              </button>
+            </div>
           </div>
           <h1 className="disp title">Simon <span className="title-v">2.0</span></h1>
 
@@ -213,6 +229,17 @@ export default function App() {
           </p>
         </footer>
       </div>
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        gistId={sync.gistId}
+        hasToken={sync.hasToken}
+        status={sync.status}
+        onSave={sync.saveSettings}
+        onClear={sync.clearSettings}
+        onSyncNow={sync.syncNow}
+      />
     </div>
   );
 }

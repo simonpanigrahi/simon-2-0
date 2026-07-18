@@ -7,10 +7,12 @@
 // merges a remote snapshot) and keep the same signatures.
 //
 // State shape is fixed by the spec: { days: {ISO: {q, side}}, weeks: {n: {boss, hpLost}} }
+// plus an `updatedAt` (epoch ms) stamped on every write — used by the sync layer
+// for last-writer-wins across devices. Components never read updatedAt.
 
 export const STORAGE_KEY = "simon2_campaign_v1";
 
-export const emptyState = () => ({ days: {}, weeks: {} });
+export const emptyState = () => ({ days: {}, weeks: {}, updatedAt: 0 });
 
 // Guard against partially-shaped or hand-edited data so the UI never crashes on
 // a missing `days`/`weeks`. Unknown top-level keys are dropped.
@@ -19,6 +21,7 @@ const normalize = (raw) => {
   return {
     days: raw.days && typeof raw.days === "object" ? raw.days : {},
     weeks: raw.weeks && typeof raw.weeks === "object" ? raw.weeks : {},
+    updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : 0,
   };
 };
 
