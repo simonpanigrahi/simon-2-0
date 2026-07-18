@@ -8,3 +8,13 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Register the service worker (built output only) under the /simon-2-0/ base.
+// BASE_URL is "/simon-2-0/", so the SW lives at /simon-2-0/sw.js and its scope
+// covers the whole app.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const base = import.meta.env.BASE_URL
+    navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(() => {})
+  })
+}

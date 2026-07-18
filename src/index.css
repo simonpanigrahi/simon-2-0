@@ -86,7 +86,9 @@ button:focus-visible {
 .container {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 1.5rem 1rem 4rem;
+  /* Respect the notch / status bar when installed (viewport-fit=cover). */
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    calc(4rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
 }
 
 /* ── Header ── */
