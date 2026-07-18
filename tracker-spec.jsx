@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from "react";
 const SEASON_START = new Date(2026, 6, 20); // Mon Jul 20, 2026 (week 1)
 const SEASON = [
   { boss: "Install the game — survey skeleton · passport ARN verified · Commitment Page signed", focus: "Tutorial: sleep anchor + system setup" },
-  { boss: "Literature survey v1 sent to Sonali (by Wed Jul 22) + meeting requested", focus: "Linear Algebra · aptitude 20m/day · C refresh" },
-  { boss: "Sonali meeting done → baseline task locked + Friday cadence agreed", focus: "Probability & Statistics" },
+  { boss: "Literature survey v1 sent to mentor (by Wed Jul 22) + meeting requested", focus: "Linear Algebra · aptitude 20m/day · C refresh" },
+  { boss: "Mentor meeting done → baseline task locked + Friday cadence agreed", focus: "Probability & Statistics" },
   { boss: "Baseline code runs end-to-end", focus: "Calculus + Discrete Math I" },
   { boss: "Math topic test ≥60% + 3 Friday updates streak", focus: "Discrete Math II + math revision" },
   { boss: "Tutoring engine live (first paid student)", focus: "DSA-1: arrays, lists, stacks, queues" },
   { boss: "DSA-1 topic test ≥60%", focus: "DSA-2: trees, heaps, hashing" },
-  { boss: "Baseline reproduced → mini-report to Sonali", focus: "DSA-3: graphs" },
+  { boss: "Baseline reproduced → mini-report to mentor", focus: "DSA-3: graphs" },
   { boss: "IEEE paper: figures + results frozen", focus: "Algorithms-1: greedy, D&C, complexity" },
   { boss: "IEEE paper full draft complete", focus: "Algorithms-2: dynamic programming" },
   { boss: "IEEE paper SUBMITTED + Scholar/ORCID live", focus: "Algorithms test + PYQs" },
@@ -38,7 +38,7 @@ const QUESTS = [
   { key: "dw2", name: "Deep Work II", desc: "60–90 min GATE", mvd: false },
   { key: "lab", name: "Lab Block", desc: "45–60 min CANDLE work", mvd: true },
   { key: "move", name: "Move", desc: "Strength session or 8k steps", mvd: false },
-  { key: "bond", name: "Bond", desc: "20 min device-free, her time", mvd: true },
+  { key: "bond", name: "Bond", desc: "20 min device-free quality time", mvd: true },
   { key: "shutdown", name: "Shutdown", desc: "5-line plan · screens off 10:30", mvd: false },
 ];
 
