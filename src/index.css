@@ -231,6 +231,52 @@ button:focus-visible {
   outline: 2px solid var(--brass);
   outline-offset: 1px;
 }
+/* Connected summary (creds saved) */
+.conn {
+  margin: 0.5rem 0 0;
+  border: 1px solid var(--panel-edge);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+.conn-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  background: var(--ink2);
+  border-top: 1px solid var(--panel-edge);
+}
+.conn-row:first-child {
+  border-top: none;
+}
+.conn-key {
+  color: var(--bone-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.conn-val {
+  color: var(--bone);
+  text-align: right;
+  word-break: break-all;
+}
+.conn-val.is-synced {
+  color: var(--sage);
+}
+.conn-val.is-syncing {
+  color: var(--brass);
+}
+.conn-val.is-offline {
+  color: var(--bone-dim);
+}
+.conn-val.is-error {
+  color: var(--clay);
+}
+.conn-val.is-local {
+  color: var(--bone-dim);
+}
+
 .modal-note {
   margin: 0.875rem 0 0;
   font-size: 0.6875rem;

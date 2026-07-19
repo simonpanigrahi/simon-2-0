@@ -236,6 +236,7 @@ export default function App() {
         gistId={sync.gistId}
         hasToken={sync.hasToken}
         status={sync.status}
+        statusClass={SYNC_CLASS[sync.status] || "is-local"}
         onSave={sync.saveSettings}
         onClear={sync.clearSettings}
         onSyncNow={sync.syncNow}

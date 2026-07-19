@@ -3,6 +3,7 @@ import { loadState, saveState } from "./storage.js";
 import { getCreds, setCreds, clearCreds, hasCreds, pullGist, pushGist } from "./sync.js";
 
 const PUSH_DELAY = 2000; // debounce window for gist pushes after a user action
+const PULL_THROTTLE = 3000; // min gap between background pulls on focus/foreground
 
 // The exact indicator strings the header shows.
 export const SYNC = {
@@ -35,6 +36,11 @@ const contentSig = (s) => JSON.stringify({ days: s.days || {}, weeks: s.weeks ||
 // localStorage (via useState(loadState)); this hook then reconciles with the
 // gist in the background and keeps them in sync — without the tracker
 // components knowing anything about it.
+//
+// Auto-sync without re-touching credentials: creds persist in localStorage, a
+// change auto-pushes (debounced, and flushed immediately when the app is
+// backgrounded so mobile doesn't drop it), and returning to the app pulls the
+// other device's latest.
 export function useSync({ state, setState }) {
   const [status, setStatus] = useState(() => (hasCreds() ? SYNC.syncing : SYNC.local));
   const [creds, setCredsState] = useState(() => {
@@ -42,20 +48,22 @@ export function useSync({ state, setState }) {
     return { gistId: c.gistId, hasToken: !!c.token };
   });
 
-  const pushTimer = useRef(null);
+  const pushTimer = useRef(null); // non-null ⇒ a debounced push is pending
   const localUpdatedAt = useRef(loadState().updatedAt || 0);
   const lastSig = useRef(contentSig(loadState())); // what's currently persisted
+  const lastPull = useRef(0); // throttles focus/foreground pulls
   const didInit = useRef(false);
 
-  // Push whatever is currently in localStorage (the freshest local snapshot).
-  const doPush = useCallback(async () => {
+  // Push the freshest local snapshot. keepalive lets the request complete even
+  // as the page is being backgrounded/closed.
+  const doPush = useCallback(async (opts = {}) => {
     const c = getCreds();
     if (!c.gistId || !c.token) {
       setStatus(SYNC.local);
       return;
     }
     setStatus(SYNC.syncing);
-    setStatus(statusFor(await pushGist(c, loadState())));
+    setStatus(statusFor(await pushGist(c, loadState(), opts)));
   }, []);
 
   // Remote wins: mirror it into localStorage + React state. Pre-setting lastSig
@@ -74,6 +82,7 @@ export function useSync({ state, setState }) {
 
   // Pull, then last-writer-wins by updatedAt.
   const reconcile = useCallback(async () => {
+    lastPull.current = Date.now();
     const c = getCreds();
     if (!c.gistId || !c.token) {
       setStatus(SYNC.local);
@@ -98,6 +107,22 @@ export function useSync({ state, setState }) {
     }
   }, [applyRemote, doPush]);
 
+  // Send a pending push immediately (skip the debounce) — used when the app is
+  // hidden/closed so a just-made change isn't lost on mobile.
+  const flushPush = useCallback(() => {
+    if (!pushTimer.current) return; // nothing pending
+    clearTimeout(pushTimer.current);
+    pushTimer.current = null;
+    doPush({ keepalive: true });
+  }, [doPush]);
+
+  // Pull on returning to the app, throttled so rapid focus events don't hammer the API.
+  const maybeReconcile = useCallback(() => {
+    if (!hasCreds()) return;
+    if (Date.now() - lastPull.current < PULL_THROTTLE) return;
+    reconcile();
+  }, [reconcile]);
+
   // Background reconcile once on mount (UI is already visible from localStorage).
   // The ref guard makes it fire once even under StrictMode's double-invoke.
   useEffect(() => {
@@ -105,6 +130,24 @@ export function useSync({ state, setState }) {
     didInit.current = true;
     reconcile();
   }, [reconcile]);
+
+  // Auto-sync around app lifecycle: flush a pending push when leaving, pull when
+  // returning. Covers mobile app-switching (visibilitychange) and tab close
+  // (pagehide) as well as desktop window focus.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushPush();
+      else maybeReconcile();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flushPush);
+    window.addEventListener("focus", maybeReconcile);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flushPush);
+      window.removeEventListener("focus", maybeReconcile);
+    };
+  }, [flushPush, maybeReconcile]);
 
   // On a genuine content change: stamp + save locally immediately, then debounce
   // a push. No-op re-renders (same content) are ignored, so mount, StrictMode
@@ -124,7 +167,10 @@ export function useSync({ state, setState }) {
     }
     setStatus(SYNC.syncing);
     if (pushTimer.current) clearTimeout(pushTimer.current);
-    pushTimer.current = setTimeout(doPush, PUSH_DELAY);
+    pushTimer.current = setTimeout(() => {
+      pushTimer.current = null;
+      doPush();
+    }, PUSH_DELAY);
     return () => {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
@@ -142,6 +188,7 @@ export function useSync({ state, setState }) {
 
   const clearSettings = useCallback(() => {
     if (pushTimer.current) clearTimeout(pushTimer.current);
+    pushTimer.current = null;
     clearCreds();
     setCredsState({ gistId: "", hasToken: false });
     setStatus(SYNC.local);

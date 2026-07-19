@@ -18,3 +18,15 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register(base + 'sw.js', { scope: base }).catch(() => {})
   })
 }
+
+// Ask the browser to keep our data (campaign state + sync credentials) durable
+// so it isn't evicted under storage pressure. Best-effort and feature-detected;
+// a no-op where unsupported (e.g. iOS Safari).
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage
+    .persisted()
+    .then((already) => {
+      if (!already) return navigator.storage.persist()
+    })
+    .catch(() => {})
+}

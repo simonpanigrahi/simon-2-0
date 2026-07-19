@@ -105,7 +105,9 @@ export async function pullGist({ gistId, token }) {
 }
 
 // Result: { status: "ok" | "auth" | "notfound" | "network" | "error" }
-export async function pushGist({ gistId, token }, state) {
+// opts.keepalive lets the request outlive the page (flush-on-background). The
+// payload is tiny, well under the 64KB keepalive limit.
+export async function pushGist({ gistId, token }, state, opts = {}) {
   const body = JSON.stringify({
     files: { [GIST_FILENAME]: { content: JSON.stringify(state) } },
   });
@@ -115,6 +117,7 @@ export async function pushGist({ gistId, token }, state) {
       method: "PATCH",
       headers: { ...authHeaders(token), "Content-Type": "application/json" },
       body,
+      keepalive: opts.keepalive === true,
     });
   } catch {
     return { status: "network" };
